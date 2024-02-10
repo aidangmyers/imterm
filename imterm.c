@@ -7,24 +7,12 @@
 */
 
 // MACROS
-#define PADDING_DIVISOR 20
+#include <curses.h>
 #define REFRESH_RATE 500      // in miliseconds
 
 // libraries
-#include <curses.h>
+#include "nwrapper.c"
 #include <unistd.h>
-
-// structs
-struct window{
-  int pos_x;
-  int pos_y;
-  int size_x;
-  int size_y;
-  WINDOW* pointer;
-};
-
-// prototypes
-void update_window(struct window*, int, int, int, int);
 
 // main
 int main() {
@@ -43,15 +31,13 @@ int main() {
   int local_padding_y = 2 * global_padding_y;
 
   // chats WINDOW*
-  struct window chats;
-  chats.pos_x = global_padding_x;
-  chats.pos_y = global_padding_y;
-  chats.size_x = (int)(max_x / 5);
-  chats.size_y = max_y - local_padding_y;
-  chats.pointer = newwin(chats.pos_y, chats.pos_x, chats.size_y, chats.size_x);
+  struct window* chats = construct_window(global_padding_x, global_padding_y, (int)(max_x / 5), (int)(max_y - local_padding_y), 1);
 
   struct window messages;
 
+  // create color pair
+  start_color();
+  init_pair(1, COLOR_WHITE, COLOR_BLACK);
 
   // === primary loop ===
   do {
@@ -60,9 +46,12 @@ int main() {
     // important data
     getmaxyx(stdscr, max_y, max_x);
 
-    // chats window
-    update_window(&chats, global_padding_x, global_padding_y, (int)(max_x / 5), max_y - local_padding_y);
-    box(chats.pointer, 0, 0);
+    // update windows
+    box(chats->pointer, 0, 0);
+    update_window(chats, global_padding_x, global_padding_y, (int)(max_x / 5), max_y - local_padding_y, 1);
+
+    // create text
+    mvwaddnstr(chats->pointer, 1, 1, "hello color!", -1);
 
     // global updates
     move(0, 0);   // to move the cursor
@@ -75,15 +64,5 @@ int main() {
   endwin();
 
   return 0;
-}
-
-void update_window(struct window* win, int pos_x, int pos_y, int size_x, int size_y) {
-  win->pos_x = pos_x;
-  win->pos_y = pos_y;
-  win->size_x = size_x;
-  win->size_y = size_y;
-  mvwin(win->pointer, win->pos_y, win->pos_x);
-  wresize(win->pointer, win->size_y, win->size_x);
-  wrefresh(win->pointer);
 }
 
